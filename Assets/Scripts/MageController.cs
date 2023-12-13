@@ -2,27 +2,36 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Animations;
+using UnityEngine.InputSystem;
 
 public class MageController : MonoBehaviour
 {
     [SerializeField] float speed = 6;
     Animator animator;
+
+    // Är designat utifrån antagandet att alla attack animationer varar lika länge
+    float attackClipLength, freezeTimer;
     string LastDirection;
+
+    Vector2 movement;
+
+    [SerializeField] AnimationClip attackAnimation;
     void Start()
     {
         animator = GetComponent<Animator>();
+        attackClipLength = attackAnimation.length;
     }
 
     void Update()
     {
+        freezeTimer -= Time.deltaTime;
         string clipName = animator.GetCurrentAnimatorClipInfo(0)[0].clip.name;
-        Vector2 movement = new(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
-
-        transform.Translate(speed * Time.deltaTime * movement.normalized);
+        //Vector2 movement = new(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
+        transform.Translate(speed * Time.deltaTime * movement);
 
         //print(animator.GetCurrentAnimatorClipInfo(0)[0].clip);
 
-        if(animator.GetCurrentAnimatorClipInfo(0)[0].clip.name != "Attack")
+        if(freezeTimer < 0)
         {
             switch(Input.GetAxisRaw("Horizontal"))
             {
@@ -92,10 +101,11 @@ public class MageController : MonoBehaviour
             direction = (byte)(animator.GetInteger("Vertical") + 2);
         }
 
-        print(direction);
+        //print(direction);
 
         if(Input.GetAxisRaw("Fire1") != 0)
         {
+            freezeTimer = attackClipLength;
             switch(direction ?? 0)
             {
                 case 0:
@@ -115,10 +125,16 @@ public class MageController : MonoBehaviour
                     break;
 
                 default:
+                    freezeTimer = 0;
                     print("Not found");
                     break;
-
             }
         }
+    }
+
+    void OnMove(InputValue value)
+    {
+        movement = value.Get<Vector2>();
+        print(movement.x);
     }
 }
